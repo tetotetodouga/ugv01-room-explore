@@ -8,8 +8,17 @@ The main goal is to enable a small tracked robot to autonomously explore an indo
 
 ---
 
-![Waveshare UGV01-X3 Robot](ugv01-room-explore/REALUGV01.jpg)
-![map](ugv01-room-explore/UGVRVIZMAP.png)
+![Waveshare UGV01-X3 Robot](images/REALUGV01.jpg)
+
+**Waveshare UGV01-X3** — tracked mobile robot with LD19 LiDAR mounted on top.
+
+---
+
+![RViz during autonomous mapping](images/UGVRVIZMAP.png)
+
+**RViz** — real-time visualization of the generated map and LiDAR data during autonomous exploration.
+
+---
 
 ## Platform
 
