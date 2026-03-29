@@ -40,7 +40,7 @@ class AutoExplore(Node):
         self.declare_parameter('odom_topic', '/odom')
         self.declare_parameter('cmd_topic', '/cmd_vel')
 
-        # у тебя лидар повернут относительно "вперед робота"
+        # fix lidar
         self.declare_parameter('scan_angle_offset_deg', 90.0)
 
         # ===== speeds =====
@@ -62,7 +62,7 @@ class AutoExplore(Node):
         self.declare_parameter('side_too_close', 0.07)
         self.declare_parameter('wall_target', 0.16)
 
-        # стартовая стенка примерно 10–20 см
+        # wall 10-20sm
         self.declare_parameter('start_wall_min', 0.07)
         self.declare_parameter('start_wall_max', 0.26)
 
@@ -78,7 +78,6 @@ class AutoExplore(Node):
         self.declare_parameter('loop_return_yaw_deg', 30.0)
 
         # ===== stuck detection =====
-        # Крайняя мера только после 4 секунд
         self.declare_parameter('stuck_time', 4.0)
         self.declare_parameter('stuck_dist', 0.05)
 
@@ -276,7 +275,7 @@ class AutoExplore(Node):
         self.publish_cmd(0.0, 0.0)
 
     def start_recovery(self, left_score: float, right_score: float):
-        # recovery всегда возвращает в FREE_EXPLORE
+        # recovery free_explore
         self.recovery_turn_dir = 1.0 if left_score >= right_score else -1.0
         self.set_state('STUCK_RECOVERY_BACK')
 
@@ -332,7 +331,7 @@ class AutoExplore(Node):
         return sum(clipped) / len(clipped)
 
     def start_wall_ok(self) -> bool:
-        # Живее старт: опираемся на МИНИМУМ справа, а не на жесткий средний профиль
+        # start new
         right_min = self.sector_min(-110.0, -60.0)
         right_avg = self.sector_avg(-105.0, -55.0)
         front = self.sector_min(-20.0, 20.0)
@@ -367,10 +366,7 @@ class AutoExplore(Node):
         return True
 
     def right_wall_reacquire_ok(self) -> bool:
-        # Мягче только для выхода из угла:
-        # допускаем, что стенка после поворота ещё не идеально справа,
-        # а чуть спереди-справа.
-
+     
         right_min = self.sector_min(-125.0, -35.0)
         right_avg = self.sector_avg(-120.0, -45.0)
         front = self.sector_min(-20.0, 20.0)
