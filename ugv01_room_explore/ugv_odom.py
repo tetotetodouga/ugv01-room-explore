@@ -16,17 +16,17 @@ class Odom(Node):
     def __init__(self):
         super().__init__('ugv_odom')
 
-        # ===== РАЗМЕРЫ / КАЛИБРОВКА =====
+        # size
         self.body_length = 0.23154
         self.body_width = 0.13483
         self.total_width = 0.19682
         self.track_width = 0.04450
         self.contact_length = 0.10800
 
-        # Повороты у тебя уже хорошие — не трогаем
+        # turns
         self.track_center = 0.19602
 
-        # ===== НАСТРОЙКИ =====
+        # settings
         self.port = '/dev/ttyAMA0'
         self.baud = 115200
 
@@ -36,10 +36,10 @@ class Odom(Node):
         self.lsign = 1.0
         self.rsign = 1.0
 
-        # odl/odr -> метры
+        # odl/odr -> meters
         self.odom_scale = 0.01
 
-        # ===== СОСТОЯНИЕ =====
+        # state
         self.x = 0.0
         self.y = 0.0
         self.th = 0.0
@@ -69,7 +69,7 @@ class Odom(Node):
         self.tf = TransformBroadcaster(self)
         self.create_subscription(Twist, '/cmd_vel', self.cmd_cb, 20)
 
-        # ===== ИНИЦИАЛИЗАЦИЯ НИЖНЕЙ ПЛАТЫ =====
+        # esp32
         self.send({"T": 605, "cmd": 0})
         self.send({"T": 143, "cmd": 0})
         self.send({"T": 900, "main": 3, "module": 0})
@@ -112,7 +112,7 @@ class Odom(Node):
         age = (now - self.last_cmd_time).nanoseconds / 1e9
 
         if age < 0.3:
-            # вперед/назад инвертированы специально
+            # forward/backward
             self.send({"T": 13, "X": -self.cmd_vx, "Z": self.cmd_wz})
         else:
             if not self.zero_sent:
@@ -144,7 +144,7 @@ class Odom(Node):
                 if d.get("T") == 1001:
                     latest_packet = d
 
-            # Берём только самый свежий пакет
+            # we take only the freshest package
             if latest_packet is not None:
                 self.process(latest_packet)
 
@@ -152,7 +152,7 @@ class Odom(Node):
             self.get_logger().warn(f"read error: {e}")
 
     def process(self, d):
-        # Берем стабильный линейный путь из odl/odr
+        # we take a stable linear path from odl/odr
         if "odl" not in d or "odr" not in d:
             return
 
@@ -190,20 +190,20 @@ class Odom(Node):
         self.last_odl = odl
         self.last_odr = odr
 
-        # защита от мусора
+        # debris protection
         if abs(d_left) > 0.20 or abs(d_right) > 0.20:
             return
 
-        # мертвая зона
+        # dead zone
         if abs(d_left) < 0.0005:
             d_left = 0.0
         if abs(d_right) < 0.0005:
             d_right = 0.0
 
-        # ЛИНЕЙНОЕ движение
+        # LINEAR motion
         ds = (d_left + d_right) / 2.0
 
-        # ПОВОРОТ — не трогаем твою калибровку
+        # TURN
         dth = self.yaw_sign * ((d_right - d_left) / self.track_center)
 
         old_th = self.th
