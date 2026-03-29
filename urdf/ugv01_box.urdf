@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<robot name="ugv01_box_light">
+
+  <material name="mat_gray">
+    <color rgba="0.55 0.55 0.55 1.0"/>
+  </material>
+
+  <material name="mat_blue">
+    <color rgba="0.15 0.35 0.90 1.0"/>
+  </material>
+
+  <link name="base_footprint"/>
+
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0.04556" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.23154 0.19682 0.09112"/>
+      </geometry>
+      <material name="mat_gray"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0 0 0.04556" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.23154 0.19682 0.09112"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- Поворачиваем весь робот на 90 градусов вправо -->
+  <joint name="base_footprint_to_base_link" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0" rpy="0 0 -1.5708"/>
+  </joint>
+
+  <link name="ldlidar_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.025" length="0.03"/>
+      </geometry>
+      <material name="mat_blue"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.025" length="0.03"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- Лидар оставляем на СТАРОМ месте относительно base_link -->
+  <joint name="base_link_to_ldlidar_link" type="fixed">
+    <parent link="base_link"/>
+    <child link="ldlidar_link"/>
+    <origin xyz="0.050 0.000 0.080" rpy="0 0 0"/>
+  </joint>
+
+</robot>
