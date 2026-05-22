@@ -555,6 +555,58 @@
         height: 42vh;
       }
     }
+  
+    /* Mobile UX: map -> joystick -> telemetry */
+    @media (max-width: 920px) {
+      .side {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .side .panel:nth-child(2) {
+        order: 1;
+      }
+
+      .side .panel:nth-child(1) {
+        order: 2;
+      }
+
+      .joy-zone {
+        height: 280px;
+      }
+
+      .wasd {
+        display: none;
+      }
+
+      .status-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .map-wrap {
+        height: 38vh;
+        min-height: 300px;
+      }
+
+      .joy-zone {
+        height: 270px;
+      }
+
+      .control-body {
+        padding: 12px;
+      }
+
+      .status-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .stat {
+        min-height: 64px;
+      }
+    }
+
   </style>
 </head>
 
@@ -621,7 +673,7 @@
           <div class="panel-head">
             <div class="panel-title">
               <strong id="t-status">Telemetry</strong>
-              <span>/cmd_vel · /odom · rosbridge</span>
+              <span>/cmd_vel_joy → mode manager → watchdog → /cmd_vel · /odom</span>
             </div>
             <button id="stopBtn" class="stop">STOP</button>
           </div>
@@ -634,7 +686,7 @@
           </div>
 
           <div class="topic-list">
-            <div class="topic-pill">/cmd_vel</div>
+            <div class="topic-pill">/cmd_vel_joy</div><div class="topic-pill">/cmd_vel_auto</div><div class="topic-pill">/cmd_vel</div>
             <div class="topic-pill">/map</div>
             <div class="topic-pill">/odom</div>
             <div class="topic-pill">ws :9090</div>
@@ -746,7 +798,7 @@
           setConn("ok");
           log("rosbridge connected");
 
-          send({ op: "advertise", topic: "/cmd_vel", type: "geometry_msgs/msg/Twist" });
+          send({ op: "advertise", topic: "/cmd_vel_joy", type: "geometry_msgs/msg/Twist" });
           send({ op: "subscribe", topic: "/map", type: "nav_msgs/msg/OccupancyGrid", throttle_rate: 900 });
           send({ op: "subscribe", topic: "/odom", type: "nav_msgs/msg/Odometry", throttle_rate: 120 });
         };
@@ -796,7 +848,7 @@
     function publishCmd(linear, angular) {
       send({
         op: "publish",
-        topic: "/cmd_vel",
+        topic: "/cmd_vel_joy",
         msg: {
           linear: { x: linear, y: 0, z: 0 },
           angular: { x: 0, y: 0, z: angular }
@@ -854,6 +906,7 @@
     }
 
     function driveLoop() {
+      if (mode !== "JOY") return;
       computeTarget();
 
       current.linear += (target.linear - current.linear) * 0.26;
@@ -1140,22 +1193,66 @@
       }
     });
 
-    $("stopBtn").addEventListener("click", stopRobot);
 
-    $("autoBtn").addEventListener("click", () => {
-      mode = "AUTO";
-      $("modeStat").textContent = "AUTO";
-      $("autoBtn").classList.add("active");
-      $("joyBtn").classList.remove("active");
+    async function apiPost(path) {
+      try {
+        const res = await fetch(path, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: "{}"
+        });
+
+        const data = await res.json();
+        log(`${path}: ${data.ok ? "OK" : "ERROR"}`);
+        return data;
+      } catch (e) {
+        log(`${path}: ${e.message}`);
+        return { ok: false, error: e.message };
+      }
+    }
+
+    async function refreshServerStatus() {
+      try {
+        const res = await fetch("/api/status");
+        const data = await res.json();
+
+        if (data.mode && data.mode !== mode) {
+          mode = data.mode;
+          $("modeStat").textContent = mode;
+          $("joyBtn").classList.toggle("active", mode === "JOY");
+          $("autoBtn").classList.toggle("active", mode === "AUTO");
+        }
+      } catch (_) {}
+    }
+
+    $("stopBtn").addEventListener("click", async () => {
       stopRobot();
-      log("AUTO selected: joystick disabled");
-    });
-
-    $("joyBtn").addEventListener("click", () => {
+      await apiPost("/api/stop");
       mode = "JOY";
       $("modeStat").textContent = "JOY";
       $("joyBtn").classList.add("active");
       $("autoBtn").classList.remove("active");
+    });
+    $("autoBtn").addEventListener("click", async () => {
+      const data = await apiPost("/api/mode/auto");
+      if (!data.ok) return;
+
+      mode = "AUTO";
+      $("modeStat").textContent = "AUTO";
+      $("autoBtn").classList.add("active");
+      $("joyBtn").classList.remove("active");
+      log("AUTO selected: auto_explore enabled");
+    });
+
+    $("joyBtn").addEventListener("click", async () => {
+      const data = await apiPost("/api/mode/joy");
+      if (!data.ok) return;
+
+      mode = "JOY";
+      $("modeStat").textContent = "JOY";
+      $("joyBtn").classList.add("active");
+      $("autoBtn").classList.remove("active");
+      stopRobot();
       log("JOY selected: joystick enabled");
     });
 
@@ -1239,6 +1336,7 @@
     resizeCanvas();
     connect();
     setInterval(driveLoop, RATE_MS);
+    setInterval(refreshServerStatus, 1200);
   </script>
 </body>
 </html>

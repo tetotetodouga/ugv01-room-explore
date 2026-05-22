@@ -60,6 +60,37 @@ def generate_launch_description():
         ]
     )
 
+    watchdog_node = Node(
+        package='ugv01_room_explore',
+        executable='cmd_vel_watchdog',
+        name='cmd_vel_watchdog',
+        output='screen',
+        parameters=[
+            {'input_topic': '/cmd_vel_web'},
+            {'output_topic': '/cmd_vel'},
+            {'timeout_sec': 0.45},
+            {'publish_hz': 20.0},
+            {'max_linear_x': 0.22},
+            {'max_angular_z': 1.10}
+        ]
+    )
+
+    mode_manager_node = Node(
+        package='ugv01_room_explore',
+        executable='cmd_vel_mode_manager',
+        name='cmd_vel_mode_manager',
+        output='screen',
+        parameters=[
+            {'joy_topic': '/cmd_vel_joy'},
+            {'auto_topic': '/cmd_vel_auto'},
+            {'output_topic': '/cmd_vel_web'},
+            {'mode_topic': '/ugv01/mode'},
+            {'stop_topic': '/ugv01/stop'},
+            {'timeout_sec': 0.50},
+            {'publish_hz': 20.0}
+        ]
+    )
+
     lidar_lifecycle_helper = TimerAction(
         period=8.0,
         actions=[
@@ -136,7 +167,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        DeclareLaunchArgument('use_rviz', default_value='true'),
+        DeclareLaunchArgument('use_rviz', default_value='false'),
         DeclareLaunchArgument('serial_port', default_value='/dev/ttyUSB0'),
         DeclareLaunchArgument('lidar_model', default_value='LD19'),
 
@@ -144,6 +175,8 @@ def generate_launch_description():
         lidar_launch_desc,
         robot_state_pub,
         rosbridge_node,
+        mode_manager_node,
+        watchdog_node,
 
         lidar_lifecycle_helper,
         slam_node,

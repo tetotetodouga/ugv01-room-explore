@@ -21,3 +21,35 @@ maps/
 *.tmp
 __pycache__/
 .env
+
+# local secrets / runtime config
+.env
+web/.env
+
+# local backups
+*.bak
+*.bak*
+*.tmp
+
+# python cache
+__pycache__/
+*.pyc
+
+# logs
+*.log
+
+# local secrets / runtime config
+.env
+web/.env
+
+# local backups
+*.bak
+*.bak*
+*.tmp
+
+# python cache
+__pycache__/
+*.pyc
+
+# logs
+*.log

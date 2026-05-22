@@ -28,6 +28,8 @@ setup(
         'console_scripts': [
             'ugv_odom = ugv01_room_explore.ugv_odom:main',
             'auto_explore = ugv01_room_explore.auto_explore:main',
+            'cmd_vel_watchdog = ugv01_room_explore.cmd_vel_watchdog:main',
+            'cmd_vel_mode_manager = ugv01_room_explore.cmd_vel_mode_manager:main',
         ],
     },
 )
