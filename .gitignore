@@ -14,3 +14,10 @@ log/
 *.rviz.bak
 
 maps/
+
+# local backups
+*.bak
+*.bak*
+*.tmp
+__pycache__/
+.env

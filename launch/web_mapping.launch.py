@@ -48,6 +48,18 @@ def generate_launch_description():
         parameters=[{'robot_description': robot_description}]
     )
 
+
+    rosbridge_node = Node(
+        package='rosbridge_server',
+        executable='rosbridge_websocket',
+        name='rosbridge_websocket',
+        output='screen',
+        parameters=[
+            {'port': 9090},
+            {'address': '0.0.0.0'}
+        ]
+    )
+
     lidar_lifecycle_helper = TimerAction(
         period=8.0,
         actions=[
@@ -131,6 +143,7 @@ def generate_launch_description():
         odom_node,
         lidar_launch_desc,
         robot_state_pub,
+        rosbridge_node,
 
         lidar_lifecycle_helper,
         slam_node,

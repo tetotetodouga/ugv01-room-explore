@@ -1,0 +1,1244 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>UGV01-X3 ROS 2 Dashboard</title>
+  <style>
+    :root {
+      --bg: #0B0C10;
+      --panel: #12141C;
+      --panel2: #0F1118;
+      --line: rgba(255,255,255,0.055);
+      --line2: rgba(255,255,255,0.09);
+      --text: #E2E8F0;
+      --muted: #64748B;
+      --muted2: #94A3B8;
+      --white: #F1F3F9;
+      --black: #090A0F;
+      --danger: #FF4D6D;
+      --ok: #86EFAC;
+      --warn: #FCD34D;
+      --mono: "SFMono-Regular", "JetBrains Mono", Consolas, monospace;
+      --sans: Inter, "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 80% 10%, rgba(255,255,255,0.035), transparent 34rem),
+        linear-gradient(180deg, #0B0C10 0%, #08090D 100%);
+      color: var(--text);
+      font-family: var(--sans);
+      overflow-x: hidden;
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    .app {
+      width: min(1500px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 22px 0 28px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px;
+      align-items: center;
+      padding: 18px;
+      background: rgba(18,20,28,0.92);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: 0 18px 60px rgba(0,0,0,0.28);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: #0B0D13;
+      border: 1px solid var(--line2);
+      color: var(--white);
+      font-family: var(--mono);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.15;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .brand p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .chip, .field, .lang {
+      min-height: 40px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #0D0F15;
+      color: var(--muted2);
+      padding: 0 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+
+    .dot.ok { background: var(--ok); }
+    .dot.warn { background: var(--warn); }
+    .dot.bad { background: var(--danger); }
+
+    .field {
+      width: 170px;
+      outline: none;
+      font-family: var(--mono);
+    }
+
+    .lang {
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .grid {
+      margin-top: 22px;
+      display: grid;
+      grid-template-columns: minmax(420px, 1.35fr) minmax(360px, 0.75fr);
+      gap: 22px;
+    }
+
+    .panel {
+      background: rgba(18,20,28,0.94);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: 0 18px 60px rgba(0,0,0,0.22);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.012);
+    }
+
+    .panel-title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .panel-title strong {
+      font-size: 14px;
+      letter-spacing: -0.01em;
+    }
+
+    .panel-title span {
+      color: var(--muted);
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+
+    .mode-strip {
+      display: flex;
+      background: #0B0D13;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 3px;
+      gap: 3px;
+    }
+
+    .mode-btn {
+      border: 0;
+      border-radius: 6px;
+      padding: 9px 13px;
+      background: transparent;
+      color: var(--muted2);
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      transition: background .18s ease, color .18s ease;
+    }
+
+    .mode-btn.active {
+      background: var(--white);
+      color: var(--black);
+    }
+
+    .stop {
+      border-radius: 8px;
+      border: 1px solid rgba(255,77,109,0.38);
+      background: rgba(255,77,109,0.055);
+      color: var(--danger);
+      padding: 10px 14px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: border-color .18s ease, background .18s ease;
+    }
+
+    .stop:hover {
+      border-color: rgba(255,77,109,0.75);
+      background: rgba(255,77,109,0.10);
+    }
+
+    .map-wrap {
+      position: relative;
+      height: min(64vh, 690px);
+      min-height: 430px;
+      background: #090A0F;
+    }
+
+    #mapCanvas {
+      display: block;
+      cursor: grab;
+      touch-action: none;
+      cursor: grab;
+      touch-action: none;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+    }
+
+
+    .map-controls {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      gap: 6px;
+      z-index: 5;
+    }
+
+    .map-control {
+      width: 38px;
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(9,10,15,0.82);
+      color: #E2E8F0;
+      font-family: var(--mono);
+      font-weight: 900;
+      cursor: pointer;
+      transition: background .15s ease, border-color .15s ease;
+    }
+
+    .map-control:hover {
+      background: rgba(241,243,249,0.12);
+      border-color: rgba(255,255,255,0.18);
+    }
+
+    .map-control.fit {
+      width: 54px;
+    }
+
+    .map-hud {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      pointer-events: none;
+    }
+
+    .hud-item {
+      padding: 7px 9px;
+      border-radius: 7px;
+      background: rgba(9,10,15,0.76);
+      border: 1px solid var(--line);
+      color: var(--muted2);
+      font-family: var(--mono);
+      font-size: 11px;
+      backdrop-filter: blur(8px);
+    }
+
+    .side {
+      display: grid;
+      gap: 22px;
+      align-content: start;
+    }
+
+    .status-grid {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat {
+      min-height: 76px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #0D0F15;
+      border: 1px solid var(--line);
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-family: var(--mono);
+      margin-bottom: 8px;
+    }
+
+    .stat strong {
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .control-body {
+      padding: 16px;
+    }
+
+    .joy-zone {
+      position: relative;
+      height: 320px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px),
+        #090B10;
+      background-size: 50% 50%;
+      overflow: hidden;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .joy-cross-v, .joy-cross-h {
+      position: absolute;
+      background: rgba(255,255,255,0.075);
+      pointer-events: none;
+    }
+
+    .joy-cross-v {
+      width: 1px;
+      height: 78%;
+      left: 50%;
+      top: 11%;
+    }
+
+    .joy-cross-h {
+      height: 1px;
+      width: 78%;
+      left: 11%;
+      top: 50%;
+    }
+
+    .joy-ring {
+      position: absolute;
+      width: 148px;
+      height: 148px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .joy-ring::after {
+      content: "";
+      position: absolute;
+      inset: 20px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 50%;
+    }
+
+    .joy-vector {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 2px;
+      height: 0;
+      transform-origin: bottom center;
+      background: rgba(241,243,249,0.55);
+      pointer-events: none;
+    }
+
+    .joy-knob {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      left: calc(50% - 30px);
+      top: calc(50% - 30px);
+      border-radius: 50%;
+      background: #E2E8F0;
+      border: 1px solid rgba(255,255,255,0.65);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.36);
+      display: grid;
+      place-items: center;
+      color: #090A0F;
+      font-family: var(--mono);
+      font-weight: 900;
+      pointer-events: none;
+    }
+
+    .joy-knob::after {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #090A0F;
+    }
+
+    .wasd {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .key {
+      min-height: 42px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #0D0F15;
+      color: var(--muted);
+      display: grid;
+      place-items: center;
+      font-family: var(--mono);
+      font-weight: 900;
+      transition: background .12s ease, color .12s ease, border-color .12s ease;
+    }
+
+    .key.active {
+      background: var(--white);
+      color: var(--black);
+      border-color: var(--white);
+    }
+
+    .key.empty {
+      opacity: 0;
+    }
+
+    .log {
+      padding: 14px 16px;
+      height: 118px;
+      overflow: auto;
+      background: #090A0F;
+      border-top: 1px solid var(--line);
+      font-family: var(--mono);
+      color: var(--muted2);
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .topic-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0 16px 16px;
+    }
+
+    .topic-pill {
+      border: 1px solid var(--line);
+      background: #0D0F15;
+      color: var(--muted2);
+      border-radius: 999px;
+      padding: 7px 9px;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    @media (max-width: 920px) {
+      .app {
+        width: min(100vw - 20px, 720px);
+        padding: 10px 0 18px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        padding: 14px;
+      }
+
+      .top-actions {
+        justify-content: stretch;
+      }
+
+      .chip, .field, .lang {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+        margin-top: 14px;
+      }
+
+      .map-wrap {
+        height: 46vh;
+        min-height: 310px;
+      }
+
+      .side {
+        gap: 14px;
+      }
+
+      .status-grid {
+        grid-template-columns: 1fr 1fr;
+        padding: 12px;
+      }
+
+      .joy-zone {
+        height: 300px;
+      }
+
+      .panel-head {
+        padding: 14px;
+      }
+
+      .brand h1 {
+        font-size: 15px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .top-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .field, .lang {
+        grid-column: span 1;
+      }
+
+      .status-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .map-wrap {
+        height: 42vh;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">X3</div>
+        <div>
+          <h1 id="t-title">UGV01-X3 ROS 2 Dashboard</h1>
+          <p id="t-subtitle">2D SLAM /map · joystick /cmd_vel · ROS 2 Jazzy</p>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <div class="chip"><span id="connDot" class="dot warn"></span><span id="connText">Connecting</span></div>
+        <input id="wsUrl" class="field" />
+        <select id="lang" class="lang">
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+          <option value="ja">日本語</option>
+          <option value="zh">中文</option>
+          <option value="ko">한국어</option>
+          <option value="es">Español</option>
+          <option value="pl">Polski</option>
+          <option value="hi">हिन्दी</option>
+        </select>
+      </div>
+    </header>
+
+    <section class="grid">
+      <section class="panel">
+        <div class="panel-head">
+          <div class="panel-title">
+            <strong id="t-map">Live /map</strong>
+            <span>/map · /odom · occupancy grid</span>
+          </div>
+
+          <div class="mode-strip">
+            <button id="autoBtn" class="mode-btn">AUTO</button>
+            <button id="joyBtn" class="mode-btn active">JOY</button>
+          </div>
+        </div>
+
+        <div class="map-wrap">
+          <canvas id="mapCanvas"></canvas>
+          <div class="map-controls">
+            <button id="zoomIn" class="map-control">+</button>
+            <button id="zoomOut" class="map-control">−</button>
+            <button id="zoomFit" class="map-control fit">FIT</button>
+          </div>
+
+          <div class="map-hud">
+            <div class="hud-item">unknown</div>
+            <div class="hud-item">free</div>
+            <div class="hud-item">occupied</div>
+            <div class="hud-item" id="mapInfo">map: waiting</div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side">
+        <section class="panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <strong id="t-status">Telemetry</strong>
+              <span>/cmd_vel · /odom · rosbridge</span>
+            </div>
+            <button id="stopBtn" class="stop">STOP</button>
+          </div>
+
+          <div class="status-grid">
+            <div class="stat"><span>MODE</span><strong id="modeStat">JOY</strong></div>
+            <div class="stat"><span>CMD</span><strong id="cmdStat">0.00 / 0.00</strong></div>
+            <div class="stat"><span>POSE</span><strong id="poseStat">0.00 0.00</strong></div>
+            <div class="stat"><span>YAW</span><strong id="yawStat">0°</strong></div>
+          </div>
+
+          <div class="topic-list">
+            <div class="topic-pill">/cmd_vel</div>
+            <div class="topic-pill">/map</div>
+            <div class="topic-pill">/odom</div>
+            <div class="topic-pill">ws :9090</div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <strong id="t-control">Drive control</strong>
+              <span>pointer joystick · WASD · stop-on-release</span>
+            </div>
+          </div>
+
+          <div class="control-body">
+            <div id="joyZone" class="joy-zone">
+              <div class="joy-cross-v"></div>
+              <div class="joy-cross-h"></div>
+              <div class="joy-ring"></div>
+              <div id="joyVector" class="joy-vector"></div>
+              <div id="joyKnob" class="joy-knob"></div>
+            </div>
+
+            <div class="wasd">
+              <div class="key empty"></div>
+              <div id="keyW" class="key">W</div>
+              <div class="key empty"></div>
+              <div id="keyA" class="key">A</div>
+              <div id="keyS" class="key">S</div>
+              <div id="keyD" class="key">D</div>
+            </div>
+          </div>
+
+          <div id="log" class="log"></div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    const I18N = {
+      ru: { title: "UGV01-X3 ROS 2 Dashboard", subtitle: "2D SLAM /map · джойстик /cmd_vel · ROS 2 Jazzy", map: "Живая /map", status: "Телеметрия", control: "Управление", connecting: "Подключение", online: "Онлайн", offline: "Офлайн" },
+      en: { title: "UGV01-X3 ROS 2 Dashboard", subtitle: "2D SLAM /map · joystick /cmd_vel · ROS 2 Jazzy", map: "Live /map", status: "Telemetry", control: "Drive control", connecting: "Connecting", online: "Online", offline: "Offline" },
+      ja: { title: "UGV01-X3 ROS 2 Dashboard", subtitle: "2D SLAM /map・ジョイスティック /cmd_vel・ROS 2 Jazzy", map: "ライブ /map", status: "テレメトリ", control: "走行制御", connecting: "接続中", online: "オンライン", offline: "オフライン" },
+      zh: { title: "UGV01-X3 ROS 2 Dashboard", subtitle: "2D SLAM /map · 摇杆 /cmd_vel · ROS 2 Jazzy", map: "实时 /map", status: "遥测", control: "驾驶控制", connecting: "连接中", online: "在线", offline: "离线" },
+      ko: { title: "UGV01-X3 ROS 2 Dashboard", subtitle: "2D SLAM /map · 조이스틱 /cmd_vel · ROS 2 Jazzy", map: "실시간 /map", status: "텔레메트리", control: "주행 제어", connecting: "연결 중", online: "온라인", offline: "오프라인" },
+      es: { title: "UGV01-X3 ROS 2 Dashboard", subtitle: "2D SLAM /map · joystick /cmd_vel · ROS 2 Jazzy", map: "Mapa /map", status: "Telemetría", control: "Control", connecting: "Conectando", online: "Online", offline: "Offline" },
+      pl: { title: "UGV01-X3 ROS 2 Dashboard", subtitle: "2D SLAM /map · joystick /cmd_vel · ROS 2 Jazzy", map: "Mapa /map", status: "Telemetria", control: "Sterowanie", connecting: "Łączenie", online: "Online", offline: "Offline" },
+      hi: { title: "UGV01-X3 ROS 2 Dashboard", subtitle: "2D SLAM /map · joystick /cmd_vel · ROS 2 Jazzy", map: "लाइव /map", status: "Telemetry", control: "Drive control", connecting: "Connecting", online: "Online", offline: "Offline" }
+    };
+
+    const wsUrlInput = $("wsUrl");
+    wsUrlInput.value = `ws://${location.hostname || "127.0.0.1"}:9090`;
+
+    let ws = null;
+    let connected = false;
+    let mode = "JOY";
+
+    let mapMsg = null;
+    let odom = { x: 0, y: 0, yaw: 0 };
+
+    const mapView = {
+      zoom: 1,
+      panX: 0,
+      panY: 0,
+      dragging: false,
+      lastX: 0,
+      lastY: 0
+    };
+    let target = { linear: 0, angular: 0 };
+    let current = { linear: 0, angular: 0 };
+
+    const MAX_LINEAR = 0.175;
+    const MAX_ANGULAR = 0.90;
+    const RATE_MS = 60;
+
+    const joy = {
+      active: false,
+      nx: 0,
+      ny: 0,
+      radius: 105,
+    };
+
+    const keys = { w: false, a: false, s: false, d: false };
+
+    function log(msg) {
+      const el = $("log");
+      const time = new Date().toLocaleTimeString();
+      el.innerHTML = `[${time}] ${msg}<br>` + el.innerHTML;
+    }
+
+    function setConn(state) {
+      connected = state === "ok";
+      const dot = $("connDot");
+      dot.className = "dot " + (connected ? "ok" : state === "bad" ? "bad" : "warn");
+      const lang = I18N[$("lang").value] || I18N.ru;
+      $("connText").textContent = connected ? lang.online : state === "bad" ? lang.offline : lang.connecting;
+    }
+
+    function connect() {
+      try {
+        if (ws) ws.close();
+        setConn("warn");
+        ws = new WebSocket(wsUrlInput.value.trim());
+
+        ws.onopen = () => {
+          setConn("ok");
+          log("rosbridge connected");
+
+          send({ op: "advertise", topic: "/cmd_vel", type: "geometry_msgs/msg/Twist" });
+          send({ op: "subscribe", topic: "/map", type: "nav_msgs/msg/OccupancyGrid", throttle_rate: 900 });
+          send({ op: "subscribe", topic: "/odom", type: "nav_msgs/msg/Odometry", throttle_rate: 120 });
+        };
+
+        ws.onclose = () => {
+          setConn("bad");
+          log("rosbridge disconnected");
+          setTimeout(connect, 1400);
+        };
+
+        ws.onerror = () => {
+          setConn("bad");
+        };
+
+        ws.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          if (data.op !== "publish") return;
+
+          if (data.topic === "/map") {
+            mapMsg = data.msg;
+            $("mapInfo").textContent = `map: ${mapMsg.info.width}×${mapMsg.info.height}`;
+            drawMap();
+          }
+
+          if (data.topic === "/odom") {
+            const p = data.msg.pose.pose.position;
+            const q = data.msg.pose.pose.orientation;
+            odom.x = p.x;
+            odom.y = p.y;
+            odom.yaw = quatYaw(q);
+            $("poseStat").textContent = `${odom.x.toFixed(2)} ${odom.y.toFixed(2)}`;
+            $("yawStat").textContent = `${(odom.yaw * 180 / Math.PI).toFixed(0)}°`;
+            drawMap();
+          }
+        };
+      } catch (e) {
+        setConn("bad");
+        log(e.message);
+      }
+    }
+
+    function send(obj) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify(obj));
+    }
+
+    function publishCmd(linear, angular) {
+      send({
+        op: "publish",
+        topic: "/cmd_vel",
+        msg: {
+          linear: { x: linear, y: 0, z: 0 },
+          angular: { x: 0, y: 0, z: angular }
+        }
+      });
+      $("cmdStat").textContent = `${linear.toFixed(2)} / ${angular.toFixed(2)}`;
+    }
+
+    function stopRobot() {
+      target.linear = 0;
+      target.angular = 0;
+      current.linear = 0;
+      current.angular = 0;
+      joy.nx = 0;
+      joy.ny = 0;
+      updateJoyVisual();
+      for (let i = 0; i < 4; i++) setTimeout(() => publishCmd(0, 0), i * 80);
+      log("STOP");
+    }
+
+    function deadzone(v, dz = 0.08) {
+      if (Math.abs(v) < dz) return 0;
+      return Math.sign(v) * ((Math.abs(v) - dz) / (1 - dz));
+    }
+
+    function expo(v, power = 1.55) {
+      return Math.sign(v) * Math.pow(Math.abs(v), power);
+    }
+
+    function computeTarget() {
+      if (mode !== "JOY") {
+        target.linear = 0;
+        target.angular = 0;
+        return;
+      }
+
+      let nx = joy.nx;
+      let ny = joy.ny;
+
+      if (!joy.active) {
+        let kx = 0, ky = 0;
+        if (keys.w) ky -= 1;
+        if (keys.s) ky += 1;
+        if (keys.a) kx -= 1;
+        if (keys.d) kx += 1;
+        nx = kx;
+        ny = ky;
+      }
+
+      const throttle = expo(deadzone(-ny), 1.35);
+      const steer = expo(deadzone(nx), 1.65);
+
+      target.linear = throttle * MAX_LINEAR;
+      target.angular = -steer * MAX_ANGULAR;
+    }
+
+    function driveLoop() {
+      computeTarget();
+
+      current.linear += (target.linear - current.linear) * 0.26;
+      current.angular += (target.angular - current.angular) * 0.26;
+
+      if (Math.abs(current.linear) < 0.003) current.linear = 0;
+      if (Math.abs(current.angular) < 0.01) current.angular = 0;
+
+      publishCmd(current.linear, current.angular);
+    }
+
+    function quatYaw(q) {
+      const siny = 2 * (q.w * q.z + q.x * q.y);
+      const cosy = 1 - 2 * (q.y * q.y + q.z * q.z);
+      return Math.atan2(siny, cosy);
+    }
+
+    const canvas = $("mapCanvas");
+    const ctx = canvas.getContext("2d");
+
+    function resizeCanvas() {
+      const r = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.floor(r.width * dpr));
+      canvas.height = Math.max(1, Math.floor(r.height * dpr));
+      drawMap();
+    }
+
+    function drawMap() {
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#090A0F";
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = "rgba(255,255,255,0.035)";
+      ctx.lineWidth = 1;
+      const gridStep = 64 * (window.devicePixelRatio || 1);
+      for (let gx = 0; gx < w; gx += gridStep) {
+        ctx.beginPath();
+        ctx.moveTo(gx, 0);
+        ctx.lineTo(gx, h);
+        ctx.stroke();
+      }
+      for (let gy = 0; gy < h; gy += gridStep) {
+        ctx.beginPath();
+        ctx.moveTo(0, gy);
+        ctx.lineTo(w, gy);
+        ctx.stroke();
+      }
+
+      if (!mapMsg) {
+        ctx.fillStyle = "#64748B";
+        ctx.font = `${14 * (window.devicePixelRatio || 1)}px ${getComputedStyle(document.body).fontFamily}`;
+        ctx.fillText("waiting for /map", 24, 36);
+        return;
+      }
+
+      const info = mapMsg.info;
+      const mw = info.width;
+      const mh = info.height;
+      const data = mapMsg.data;
+
+      const fitScale = Math.min(w / mw, h / mh);
+      const scale = fitScale * mapView.zoom;
+      const ox = (w - mw * scale) / 2 + mapView.panX;
+      const oy = (h - mh * scale) / 2 + mapView.panY;
+
+      for (let y = 0; y < mh; y++) {
+        for (let x = 0; x < mw; x++) {
+          let v = data[y * mw + x];
+
+          // rosbridge/browser may expose int8 -1 as 255
+          if (v === -1 || v === 255) {
+            ctx.fillStyle = "#0D1117";       // unknown
+          } else if (v >= 65) {
+            ctx.fillStyle = "#F8FAFC";       // occupied / wall
+          } else if (v <= 20) {
+            ctx.fillStyle = "#4B5563";       // free
+          } else {
+            ctx.fillStyle = "#9CA3AF";       // semi occupied
+          }
+
+          ctx.fillRect(
+            ox + x * scale,
+            oy + (mh - y - 1) * scale,
+            Math.max(1, Math.ceil(scale)),
+            Math.max(1, Math.ceil(scale))
+          );
+        }
+      }
+
+      const hasKnown = Array.prototype.some.call(data, v => v !== -1 && v !== 255);
+      if (!hasKnown) {
+        ctx.fillStyle = "rgba(226,232,240,0.80)";
+        ctx.font = `${13 * (window.devicePixelRatio || 1)}px ${getComputedStyle(document.body).fontFamily}`;
+        ctx.fillText("EMPTY MAP: move robot or wait for SLAM", 24, 36);
+      }
+
+      drawRobotOnMap(info, scale, ox, oy, mh);
+    }
+
+    function drawRobotOnMap(info, scale, ox, oy, mh) {
+      const origin = info.origin.position;
+      const rx = (odom.x - origin.x) / info.resolution;
+      const ry = (odom.y - origin.y) / info.resolution;
+
+      const px = ox + rx * scale;
+      const py = oy + (mh - ry) * scale;
+
+      if (!Number.isFinite(px) || !Number.isFinite(py)) return;
+
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(-odom.yaw);
+
+      ctx.strokeStyle = "#090A0F";
+      ctx.lineWidth = Math.max(2, 3 * (window.devicePixelRatio || 1));
+
+      ctx.fillStyle = "#F8FAFC";
+      ctx.strokeStyle = "#020617";
+      ctx.lineWidth = Math.max(3, 4 * (window.devicePixelRatio || 1));
+
+      ctx.beginPath();
+      ctx.moveTo(34, 0);
+      ctx.lineTo(-20, -18);
+      ctx.lineTo(-12, 0);
+      ctx.lineTo(-20, 18);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#020617";
+      ctx.beginPath();
+      ctx.arc(0, 0, 5 * (window.devicePixelRatio || 1), 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+
+    canvas.addEventListener("wheel", (e) => {
+      e.preventDefault();
+
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const mx = (e.clientX - rect.left) * dpr;
+      const my = (e.clientY - rect.top) * dpr;
+
+      const oldZoom = mapView.zoom;
+      const factor = e.deltaY < 0 ? 1.14 : 0.88;
+      const newZoom = Math.min(12, Math.max(0.45, oldZoom * factor));
+
+      const k = newZoom / oldZoom;
+      mapView.panX = mx - (mx - mapView.panX) * k;
+      mapView.panY = my - (my - mapView.panY) * k;
+      mapView.zoom = newZoom;
+
+      drawMap();
+    }, { passive: false });
+
+    canvas.addEventListener("pointerdown", (e) => {
+      mapView.dragging = true;
+      mapView.lastX = e.clientX;
+      mapView.lastY = e.clientY;
+      canvas.setPointerCapture(e.pointerId);
+      canvas.style.cursor = "grabbing";
+    });
+
+    canvas.addEventListener("pointermove", (e) => {
+      if (!mapView.dragging) return;
+      const dpr = window.devicePixelRatio || 1;
+      mapView.panX += (e.clientX - mapView.lastX) * dpr;
+      mapView.panY += (e.clientY - mapView.lastY) * dpr;
+      mapView.lastX = e.clientX;
+      mapView.lastY = e.clientY;
+      drawMap();
+    });
+
+    canvas.addEventListener("pointerup", () => {
+      mapView.dragging = false;
+      canvas.style.cursor = "grab";
+    });
+
+    canvas.addEventListener("pointercancel", () => {
+      mapView.dragging = false;
+      canvas.style.cursor = "grab";
+    });
+
+    canvas.addEventListener("dblclick", () => {
+      mapView.zoom = 1;
+      mapView.panX = 0;
+      mapView.panY = 0;
+      drawMap();
+      log("map view reset");
+    });
+
+    function updateJoyFromEvent(e) {
+      const zone = $("joyZone");
+      const rect = zone.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = e.clientX - cx;
+      const dy = e.clientY - cy;
+
+      const maxR = Math.min(rect.width, rect.height) * 0.34;
+      const dist = Math.hypot(dx, dy);
+      const clamped = Math.min(maxR, dist);
+      const angle = Math.atan2(dy, dx);
+
+      const x = Math.cos(angle) * clamped;
+      const y = Math.sin(angle) * clamped;
+
+      joy.nx = x / maxR;
+      joy.ny = y / maxR;
+      joy.radius = maxR;
+
+      updateJoyVisual();
+    }
+
+    function updateJoyVisual() {
+      const knob = $("joyKnob");
+      const vec = $("joyVector");
+      const x = joy.nx * joy.radius;
+      const y = joy.ny * joy.radius;
+
+      knob.style.transform = `translate(${x}px, ${y}px)`;
+
+      const len = Math.hypot(x, y);
+      const angle = Math.atan2(y, x) + Math.PI / 2;
+      vec.style.height = `${len}px`;
+      vec.style.transform = `translate(-50%, -100%) rotate(${angle}rad)`;
+    }
+
+    $("joyZone").addEventListener("pointerdown", (e) => {
+      joy.active = true;
+      $("joyZone").setPointerCapture(e.pointerId);
+      updateJoyFromEvent(e);
+    });
+
+    $("joyZone").addEventListener("pointermove", (e) => {
+      if (!joy.active) return;
+      updateJoyFromEvent(e);
+    });
+
+    function releaseJoy() {
+      joy.active = false;
+      joy.nx = 0;
+      joy.ny = 0;
+      updateJoyVisual();
+      stopRobot();
+    }
+
+    $("joyZone").addEventListener("pointerup", releaseJoy);
+    $("joyZone").addEventListener("pointercancel", releaseJoy);
+    window.addEventListener("blur", stopRobot);
+
+    function setKeyVisual() {
+      $("keyW").classList.toggle("active", keys.w);
+      $("keyA").classList.toggle("active", keys.a);
+      $("keyS").classList.toggle("active", keys.s);
+      $("keyD").classList.toggle("active", keys.d);
+    }
+
+    window.addEventListener("keydown", (e) => {
+      const k = e.key.toLowerCase();
+      if (k in keys) {
+        keys[k] = true;
+        setKeyVisual();
+        e.preventDefault();
+      }
+      if (k === " ") {
+        stopRobot();
+        e.preventDefault();
+      }
+    });
+
+    window.addEventListener("keyup", (e) => {
+      const k = e.key.toLowerCase();
+      if (k in keys) {
+        keys[k] = false;
+        setKeyVisual();
+        e.preventDefault();
+      }
+    });
+
+    $("stopBtn").addEventListener("click", stopRobot);
+
+    $("autoBtn").addEventListener("click", () => {
+      mode = "AUTO";
+      $("modeStat").textContent = "AUTO";
+      $("autoBtn").classList.add("active");
+      $("joyBtn").classList.remove("active");
+      stopRobot();
+      log("AUTO selected: joystick disabled");
+    });
+
+    $("joyBtn").addEventListener("click", () => {
+      mode = "JOY";
+      $("modeStat").textContent = "JOY";
+      $("joyBtn").classList.add("active");
+      $("autoBtn").classList.remove("active");
+      log("JOY selected: joystick enabled");
+    });
+
+    $("lang").addEventListener("change", () => {
+      const t = I18N[$("lang").value] || I18N.ru;
+      $("t-title").textContent = t.title;
+      $("t-subtitle").textContent = t.subtitle;
+      $("t-map").textContent = t.map;
+      $("t-status").textContent = t.status;
+      $("t-control").textContent = t.control;
+      $("connText").textContent = connected ? t.online : t.connecting;
+    });
+
+    wsUrlInput.addEventListener("change", connect);
+
+
+    function zoomMapAt(factor, cx = canvas.width / 2, cy = canvas.height / 2) {
+      const oldZoom = mapView.zoom;
+      const newZoom = Math.min(16, Math.max(0.35, oldZoom * factor));
+      const k = newZoom / oldZoom;
+
+      mapView.panX = cx - (cx - mapView.panX) * k;
+      mapView.panY = cy - (cy - mapView.panY) * k;
+      mapView.zoom = newZoom;
+
+      drawMap();
+    }
+
+    function fitMapView() {
+      mapView.zoom = 1;
+      mapView.panX = 0;
+      mapView.panY = 0;
+      drawMap();
+      log("map view fit");
+    }
+
+    if ($("zoomIn")) $("zoomIn").addEventListener("click", () => zoomMapAt(1.25));
+    if ($("zoomOut")) $("zoomOut").addEventListener("click", () => zoomMapAt(0.8));
+    if ($("zoomFit")) $("zoomFit").addEventListener("click", fitMapView);
+
+    canvas.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const mx = (e.clientX - rect.left) * dpr;
+      const my = (e.clientY - rect.top) * dpr;
+      zoomMapAt(e.deltaY < 0 ? 1.14 : 0.88, mx, my);
+    }, { passive: false });
+
+    canvas.addEventListener("pointerdown", (e) => {
+      mapView.dragging = true;
+      mapView.lastX = e.clientX;
+      mapView.lastY = e.clientY;
+      canvas.setPointerCapture(e.pointerId);
+      canvas.style.cursor = "grabbing";
+    });
+
+    canvas.addEventListener("pointermove", (e) => {
+      if (!mapView.dragging) return;
+      const dpr = window.devicePixelRatio || 1;
+      mapView.panX += (e.clientX - mapView.lastX) * dpr;
+      mapView.panY += (e.clientY - mapView.lastY) * dpr;
+      mapView.lastX = e.clientX;
+      mapView.lastY = e.clientY;
+      drawMap();
+    });
+
+    canvas.addEventListener("pointerup", () => {
+      mapView.dragging = false;
+      canvas.style.cursor = "grab";
+    });
+
+    canvas.addEventListener("pointercancel", () => {
+      mapView.dragging = false;
+      canvas.style.cursor = "grab";
+    });
+
+    canvas.addEventListener("dblclick", fitMapView);
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+    connect();
+    setInterval(driveLoop, RATE_MS);
+  </script>
+</body>
+</html>
