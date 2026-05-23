@@ -607,7 +607,12 @@
       }
     }
 
-  </style>
+  
+    /* demo-safe robot marker CSS */
+    .robot-marker, .pose-marker, .robot-arrow {
+      display: none !important;
+    }
+</style>
 </head>
 
 <body>
@@ -727,6 +732,8 @@
   </main>
 
   <script>
+    const SHOW_ROBOT_MARKER = false; // demo-safe: map is correct, robot marker disabled until TF map->odom support
+
     const $ = (id) => document.getElementById(id);
 
     const I18N = {
