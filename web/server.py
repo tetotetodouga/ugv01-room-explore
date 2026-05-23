@@ -46,8 +46,16 @@ WORKSPACE_SETUP = os.getenv("WORKSPACE_SETUP", str(Path.home() / "ros2_ws/instal
 AUTO_CMD = os.getenv(
     "AUTO_CMD",
     "ros2 run ugv01_room_explore auto_explore --ros-args "
-    "-r /cmd_vel:=/cmd_vel_auto "
-    "-r cmd_vel:=/cmd_vel_auto"
+    "-p cmd_topic:=/cmd_vel_auto "
+    "-p scan_angle_offset_deg:=0.0 "
+    "-p forward_wall:=0.045 "
+    "-p forward_explore:=0.065 "
+    "-p turn_speed:=0.28 "
+    "-p corner_turn_speed:=0.18 "
+    "-p back_speed:=0.045 "
+    "-p front_emergency:=0.30 "
+    "-p front_block:=0.55 "
+    "-p front_clear:=0.75"
 )
 
 

@@ -38,17 +38,17 @@ class AutoExplore(Node):
         # ===== topics =====
         self.declare_parameter('scan_topic', '/ldlidar_node/scan')
         self.declare_parameter('odom_topic', '/odom')
-        self.declare_parameter('cmd_topic', '/cmd_vel')
+        self.declare_parameter('cmd_topic', '/cmd_vel_auto')
 
         # fix lidar
-        self.declare_parameter('scan_angle_offset_deg', 90.0)
+        self.declare_parameter('scan_angle_offset_deg', 0.0)
 
         # ===== speeds =====
-        self.declare_parameter('forward_wall', 0.08)
-        self.declare_parameter('forward_explore', 0.12)
-        self.declare_parameter('turn_speed', 0.55)
-        self.declare_parameter('corner_turn_speed', 0.25)
-        self.declare_parameter('back_speed', 0.08)
+        self.declare_parameter('forward_wall', 0.065)
+        self.declare_parameter('forward_explore', 0.095)
+        self.declare_parameter('turn_speed', 0.38)
+        self.declare_parameter('corner_turn_speed', 0.22)
+        self.declare_parameter('back_speed', 0.065)
 
         # recovery speed
         self.declare_parameter('recovery_turn_speed', 0.28)
