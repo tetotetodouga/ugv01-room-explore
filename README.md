@@ -205,16 +205,19 @@ still in progress:
 - nav2 integration
 - more robust launch automation
 
-## planned next steps
+## next steps
 
-- add nav2 navigation stack
-- improve autonomous exploration behavior
-- add saved-map mode
-- improve web robot pose visualization using tf
-- polish dashboard ui and mobile layout
-- prepare a cleaner public demo video
-- document the full build process
+this project is still moving, so the next things i want to add are:
+
+- add nav2 for real autonomous navigation
+- make the auto mode smoother and safer
+- add saved-map mode for running on an existing map
+- improve robot position drawing in the web map
+- polish the dashboard ui 
+- record a cleaner public demo video
 
 ## repository note
 
-this repository is a working robotics portfolio project. the current version is functional but still experimental. it is intended to document progress and gradually evolve into a more complete ros 2 mobile robot platform.
+this is a work-in-progress robot project built around the waveshare ugv01-x3, ros 2 jazzy and a web dashboard. the current version already works, but it is still experimental and will keep changing.
+
+the goal is simple: build a small but real ros 2 mobile robot platform — basically a cool little machine for my plush teto, with mapping, web control, autonomous modes and eventually nav2.
