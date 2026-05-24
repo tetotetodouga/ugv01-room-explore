@@ -1,139 +1,220 @@
-# UGV01 Room Explore
+# ugv01-x3 ros 2 web slam
 
-ROS 2 Jazzy package for autonomous indoor exploration and 2D SLAM on a Waveshare UGV01-X3 mobile robot based on Raspberry Pi 5.
+working progress demo of a **waveshare ugv01-x3** mobile robot running **ros 2 jazzy**, **2d lidar slam**, and a custom **web dashboard** for manual and autonomous control.
 
-This project combines wheel odometry, LiDAR-based autonomous exploration, SLAM Toolbox mapping, a simple URDF model and ready-to-use launch files.
+this project is not a final product yet. it is a snapshot of the current working result: mapping, web control, auto/joy switching, and basic safety logic are already working. the project will be improved further, with **nav2 integration planned for the future**.
 
-The main goal is to enable a small tracked robot to autonomously explore an indoor environment (classroom, lab, corridor) and build a 2D map in real time.
+## demo
 
----
+[![ugv01-x3 ros 2 web slam demo](images/webgif1.gif)](https://www.youtube.com/watch?v=Ok5jk4S6Ps8)
 
-![Waveshare UGV01-X3 Robot](images/REALUGV01.jpg)
+[watch the demo on youtube](https://www.youtube.com/watch?v=Ok5jk4S6Ps8)
 
-**Waveshare UGV01-X3** — tracked mobile robot with LD19 LiDAR mounted on top.
+## robot platform
 
----
+![ugv01-x3 robot](images/REALUGV01.jpg)
 
-![RViz during autonomous mapping](images/UGVRVIZMAP.png)
+## current features
 
-**RViz** — real-time visualization of the generated map and LiDAR data during autonomous exploration.
+- ros 2 jazzy based robot stack
+- 2d slam mapping with `slam_toolbox`
+- ld19 / ldlidar laser scanner
+- custom ugv01-x3 urdf model
+- web dashboard for desktop and mobile
+- live `/map` visualization in browser
+- web joystick control
+- `auto` / `joy` mode switching
+- stop button
+- rosbridge websocket connection
+- command mode manager
+- cmd_vel watchdog safety layer
+- autonomous exploration script prototype
+- launch files for web mode with and without rviz
 
----
+## hardware and software setup
 
-## Platform
+main setup used in this project:
 
-### Robot
-- Waveshare UGV01-X3 (tracked)
-- Raspberry Pi 5 (onboard computer)
+- robot platform: **waveshare ugv01-x3**
+- compute: **raspberry pi 5**
+- os: **ubuntu 24.04**
+- ros: **ros 2 jazzy**
+- lidar: **ld19 / ldlidar**
+- motor controller: waveshare esp32 robot controller
+- browser dashboard: html/css/javascript + rosbridge
+- backend server: python `server.py`
 
-### Sensors
-- LDROBOT LD19 / STL-19P 2D LiDAR
-- Motor feedback from robot controller
-
-### Software
-- Ubuntu 24.04
-- ROS 2 Jazzy Jalisco
-- slam_toolbox
-- robot_state_publisher
-- rviz2
-
----
-
-## Main Features
-
-- Wheel odometry node (`ugv_odom`)
-- Autonomous exploration node (`auto_explore`)
-- Integration with SLAM Toolbox
-- Simple URDF model for TF and visualization
-- Two launch files:
-  - Mapping only
-  - Mapping + autonomous exploration
-- Map saving support
-
----
-
-## Repository Structure
+## system architecture
 
 ```text
-ugv01_room_explore/
-├── config/
-│   └── slam_async.yaml
-├── launch/
-│   ├── autonomy_mapping.launch.py
-│   └── mapping.launch.py
-├── resource/
-│   └── ugv01_room_explore
-├── ugv01_room_explore/
-│   ├── __init__.py
-│   ├── auto_explore.py
-│   └── ugv_odom.py
-├── urdf/
-│   └── ugv01_box.urdf
-├── package.xml
-├── setup.cfg
-└── setup.py
+web joystick
+  -> /cmd_vel_joy
+  -> cmd_vel_mode_manager
+  -> /cmd_vel_web
+  -> cmd_vel_watchdog
+  -> /cmd_vel
+  -> ugv_odom
+  -> esp32 / motors
 ```
 
-## Nodes
+autonomous mode:
 
-### 1. ugv_odom
-- Reads feedback from the robot controller
-- Computes and publishes wheel odometry to `/odom`
-- Publishes TF transform `odom → base_link`
+```text
+auto_explore
+  -> /cmd_vel_auto
+  -> cmd_vel_mode_manager
+  -> /cmd_vel_web
+  -> cmd_vel_watchdog
+  -> /cmd_vel
+  -> ugv_odom
+  -> esp32 / motors
+```
 
-### 2. auto_explore
-- Processes LiDAR scans from `/scan`
-- Implements hybrid exploration logic
-- Publishes velocity commands to `/cmd_vel`
-- Includes wall-following, free exploration and stuck recovery behaviors
+mapping pipeline:
 
-### 3. robot_state_publisher
-- Publishes robot TF frames based on the URDF model
-- Provides correct transformation for the LiDAR frame (`base_link → laser`)
+```text
+ld19 lidar
+  -> /ldlidar_node/scan
+  -> slam_toolbox
+  -> /map
+  -> web dashboard / rviz
+```
 
-### 4. slam_toolbox
-- Builds 2D occupancy grid map in real time
-- Fuses LiDAR scans and odometry data
+## main ros topics
 
----
+```text
+/map
+/odom
+/ldlidar_node/scan
+/cmd_vel_joy
+/cmd_vel_auto
+/cmd_vel_web
+/cmd_vel
+/ugv01/mode
+/ugv01/stop
+```
 
-## Exploration Logic
+## launch without rviz
 
-The robot uses a simple state machine that does not require a pre-built map:
-
-- **START_ASSESS** — initial scene observation at startup
-- **START_WALL_FOLLOW** — follows a wall on the right side while maintaining a safe distance
-- **WALL_CORNER_TURN** — handles corners and attempts to reacquire the wall
-- **FREE_EXPLORE** — moves toward open space when wall following is not reliable
-- **STUCK_RECOVERY** — performs a recovery maneuver when the robot is physically stuck
-
-This hybrid approach makes the system more robust in real indoor environments with furniture and irregular walls.
-
-
-## Build Instructions
+recommended for normal web-dashboard operation on raspberry pi 5:
 
 ```bash
 cd ~/ros2_ws
 source /opt/ros/jazzy/setup.bash
-colcon build --packages-select ugv01_room_explore
+source install/setup.bash
+
+ros2 launch ugv01_room_explore web_mapping.launch.py serial_port:=/dev/ttyUSB0 lidar_model:=LD19 use_rviz:=false
+```
+
+## launch with rviz
+
+use this for debugging, visualization, and checking tf / robot model:
+
+```bash
+cd ~/ros2_ws
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+
+ros2 launch ugv01_room_explore web_mapping_rviz.launch.py
+```
+
+## start web dashboard
+
+run the dashboard server in a separate terminal:
+
+```bash
+cd ~/ros2_ws/src/ugv01-room-explore
+python3 web/server.py
+```
+
+open in browser:
+
+```text
+http://<robot-ip>:8080
+```
+
+example:
+
+```text
+http://192.168.0.108:8080
+```
+
+rosbridge websocket runs on:
+
+```text
+ws://<robot-ip>:9090
+```
+
+## lidar lifecycle helper
+
+if the lidar node starts but remains unconfigured, activate it manually:
+
+```bash
+source /opt/ros/jazzy/setup.bash
 source ~/ros2_ws/install/setup.bash
-```
-## Launch Commands
-# Mapping only:
-```bash
-ros2 launch ugv01_room_explore mapping.launch.py
-```
-# Mapping + Autonomous Exploration:
-```bash
-ros2 launch ugv01_room_explore autonomy_mapping.launch.py
-```
-## Save Map
-```bash
-mkdir -p ~/ros2_ws/maps
-ros2 run nav2_map_server map_saver_cli -f ~/ros2_ws/maps/my_map
+
+ros2 lifecycle get /ldlidar_node
+ros2 lifecycle set /ldlidar_node configure
+sleep 5
+ros2 lifecycle set /ldlidar_node activate
+sleep 3
+
+ros2 lifecycle get /ldlidar_node
+ros2 topic hz /ldlidar_node/scan
 ```
 
-#This will create two files:
+expected result:
 
-~/ros2_ws/maps/my_map.pgm
-~/ros2_ws/maps/my_map.yaml
+```text
+active [3]
+average rate: about 9-10 hz
+```
+
+## safety logic
+
+the web dashboard does not publish directly to `/cmd_vel`.
+
+commands pass through:
+
+1. `cmd_vel_mode_manager`
+2. `cmd_vel_watchdog`
+3. `ugv_odom`
+
+if web commands stop arriving, the watchdog publishes zero velocity.
+
+## current status
+
+working:
+
+- web dashboard
+- live 2d map display
+- desktop control
+- mobile control
+- joystick driving
+- auto/joy switching
+- stop button
+- basic autonomous movement
+- 2d slam mapping
+
+still in progress:
+
+- cleaner autonomous behavior tuning
+- better readme media and documentation
+- improved demo video
+- saved map / localization workflow
+- nav2 integration
+- more robust launch automation
+
+## planned next steps
+
+- add nav2 navigation stack
+- improve autonomous exploration behavior
+- add saved-map mode
+- improve web robot pose visualization using tf
+- polish dashboard ui and mobile layout
+- prepare a cleaner public demo video
+- document the full build process
+
+## repository note
+
+this repository is a working robotics portfolio project. the current version is functional but still experimental. it is intended to document progress and gradually evolve into a more complete ros 2 mobile robot platform.
